@@ -2,11 +2,16 @@ import shutil
 from textnode import TextNode
 import os
 from blocktype import markdown_to_html_node
+import sys
 
 def main():
-    copy_dir("/home/gbadley/boot-dev-course/Static-Site-Generator/static","/home/gbadley/boot-dev-course/Static-Site-Generator/public")
+    if len(sys.argv) > 1:
+        basepath = sys.argv[1]
+    else:
+        basepath = "/"
+    copy_dir("static","docs")
     #generate_page("content/index.md","template.html","public/index.html")
-    generate_pages_recursive("content","template.html","public")
+    generate_pages_recursive("content","template.html","docs",basepath)
 
 def copy_dir(source,destination):
     shutil.rmtree(destination)
@@ -28,7 +33,7 @@ def extract_title(markdown):
         if line.startswith("# "):
             return line.replace("# ","")
         
-def generate_pages_recursive(dir_path_content, template_path, dest_dir_path):
+def generate_pages_recursive(dir_path_content, template_path, dest_dir_path,basepath):
     items = os.listdir(dir_path_content)
     for item in items:
         file_path = os.path.join(dir_path_content,item)
@@ -36,15 +41,15 @@ def generate_pages_recursive(dir_path_content, template_path, dest_dir_path):
             print(f'{item} is a file')
             item = item.replace(".md",".html")
             dest_path = os.path.join(dest_dir_path,item)
-            generate_page(file_path,template_path,dest_path)
+            generate_page(file_path,template_path,dest_path,basepath)
         else:
             print(f'{item} is a dir')
             new_dir = os.path.join(dir_path_content,item)
             new_dest_dir = os.path.join(dest_dir_path,item)
             os.mkdir(new_dest_dir)
-            generate_pages_recursive(new_dir,template_path,new_dest_dir)
+            generate_pages_recursive(new_dir,template_path,new_dest_dir,basepath)
     
-def generate_page(from_path, template_path, dest_path):
+def generate_page(from_path, template_path, dest_path,basepath):
     print(f"Generating page from {from_path} to {dest_path} using {template_path}")
     with open(file=from_path,mode='r',encoding='utf-8') as reader:
         content = reader.read()
@@ -58,7 +63,8 @@ def generate_page(from_path, template_path, dest_path):
 
     html = html_node.to_html()
     title = extract_title(content)
-    new_html = template.replace("{{ Title }}",title).replace("{{ Content }}",html)
+    new_html = template.replace("{{ Title }}",title).replace("{{ Content }}",html).replace('href="/',f'href="{basepath}').replace('src="/',f'src="{basepath}')
+
 
     dir = os.path.dirname(dest_path)
 
